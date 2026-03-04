@@ -1,0 +1,43 @@
+name: 🛠️ Deploy Backend → Supabase Edge Functions
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/functions/**'
+  workflow_dispatch:   # allows manual trigger from GitHub UI
+
+jobs:
+  deploy-functions:
+    name: Deploy Edge Functions
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ⬇️ Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: 🔐 Link Supabase project
+        run: supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: 🚀 Deploy all Edge Functions
+        run: |
+          supabase functions deploy paystackWebhook    --no-verify-jwt
+          supabase functions deploy installmentBilling
+          supabase functions deploy CreateSubscription
+          supabase functions deploy createVirtualAccount
+          supabase functions deploy vtuProcessor       --no-verify-jwt
+          supabase functions deploy retryWorker        --no-verify-jwt
+          supabase functions deploy activatePlan
+          supabase functions deploy adminDashboard
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: ✅ Done
+        run: echo "All Edge Functions deployed successfully"
